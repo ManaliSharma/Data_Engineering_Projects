@@ -243,7 +243,8 @@ def delete_cluster_resources(redshift):
     global DWH_CLUSTER_IDENTIFIER
     redshift.delete_cluster( ClusterIdentifier=DWH_CLUSTER_IDENTIFIER,  SkipFinalClusterSnapshot=True)
 
-def delete_iam_resource(iam,DWH_IAM_ROLE_NAME):
+def delete_iam_resource(iam):
+    global DWH_IAM_ROLE_NAME
     iam.detach_role_policy(RoleName=DWH_IAM_ROLE_NAME, PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")
     iam.delete_role(RoleName=DWH_IAM_ROLE_NAME)
     
