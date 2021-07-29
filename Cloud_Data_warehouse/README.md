@@ -44,8 +44,8 @@ DWH_IAM_ROLE_NAME      =
 
 2. Create a python environment with the dependencies listed on *requirements.txt*
 - Use following commands
--- conda create -n yourenv pip
--- pip install -r requirements.txt
+    *- conda create -n yourenv pip
+    *- pip install -r requirements.txt
 3. Run the *create_cluster* script to set up the needed infrastructure for this project.
 
     `$ python create_cluster.py`
