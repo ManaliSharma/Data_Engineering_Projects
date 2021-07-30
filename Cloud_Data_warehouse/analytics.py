@@ -1,32 +1,31 @@
 import configparser
 import psycopg2
-from sql_queries import select_number_rows_queries
+from sql_queries import analytical_queries, analytical_query_titles
 
 
-def get_results(cur, conn):
+def run_analytical_queries(cur):
     """
-    Get the number of rows stored into each table
+    Runs all analytical queries written in the sql_queries script
+    :param cur:
+    :return:
     """
-    for query in select_number_rows_queries:
-        print('Running ' + query)
-        cur.execute(query)
-        results = cur.fetchone()
-
-        for row in results:
-            print("   ", row)
+    idx = 0
+    for query in analytical_queries:
+        print("{}... ".format(analytical_query_titles[idx]))
+        row = cur.execute(query)
+        print(row.total)
+        idx = idx + 1
+        print("  [DONE]  ")
 
 
 def main():
-    """
-    Run queries on the staging and dimensional tables to validate that the project has been created successfully
-    """
     config = configparser.ConfigParser()
     config.read('dwh.cfg')
 
     conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
     cur = conn.cursor()
-    
-    get_results(cur, conn)
+
+    run_analytical_queries(cur)
 
     conn.close()
 
