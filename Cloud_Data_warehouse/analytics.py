@@ -1,21 +1,19 @@
 import configparser
 import psycopg2
-from sql_queries import analytical_queries, analytical_query_titles
+from sql_queries import select_number_rows_queries
 
 
-def run_analytical_queries(cur):
+def get_results(cur, conn):
     """
-    Runs all analytical queries written in the sql_queries script
-    :param cur:
-    :return:
+    Get the number of rows stored into each table
     """
-    idx = 0
-    for query in analytical_queries:
-        print("{}... ".format(analytical_query_titles[idx]))
-        row = cur.execute(query)
-        print(row.total)
-        idx = idx + 1
-        print("  [DONE]  ")
+    for query in select_number_rows_queries:
+        print('Running ' + query)
+        cur.execute(query)
+        results = cur.fetchone()
+
+        for row in results:
+            print("   ", row)
 
 
 def main():
@@ -25,7 +23,7 @@ def main():
     conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
     cur = conn.cursor()
 
-    run_analytical_queries(cur)
+    get_results(cur,conn)
 
     conn.close()
 

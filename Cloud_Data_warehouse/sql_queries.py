@@ -227,20 +227,34 @@ time_table_insert = ("""
         start_time NOT IN (SELECT DISTINCT start_time FROM time)
 """)
 
-analytical_queries = [
-    'SELECT COUNT(*) AS total FROM artists',
-    'SELECT COUNT(*) AS total FROM songs',
-    'SELECT COUNT(*) AS total FROM time',
-    'SELECT COUNT(*) AS total FROM users',
-    'SELECT COUNT(*) AS total FROM songplays'
-]
-analytical_query_titles = [
-    'Artists table count',
-    'Songs table count',
-    'Time table count',
-    'Users table count',
-    'Song plays table count'
-]
+# GET NUMBER OF ROWS IN EACH TABLE
+get_number_staging_events = ("""
+    SELECT COUNT(*) FROM staging_events
+""")
+
+get_number_staging_songs = ("""
+    SELECT COUNT(*) FROM staging_songs
+""")
+
+get_number_songplays = ("""
+    SELECT COUNT(*) FROM songplays
+""")
+
+get_number_users = ("""
+    SELECT COUNT(*) FROM users
+""")
+
+get_number_songs = ("""
+    SELECT COUNT(*) FROM songs
+""")
+
+get_number_artists = ("""
+    SELECT COUNT(*) FROM artists
+""")
+
+get_number_time = ("""
+    SELECT COUNT(*) FROM time
+""")
 
 # QUERY LISTS
 
@@ -258,3 +272,4 @@ copy_table_order = ['staging_events', 'staging_songs']
 copy_table_queries = [staging_events_copy, staging_songs_copy]
 insert_table_order = ['artists', 'songs', 'time', 'users', 'songplays']
 insert_table_queries = [artist_table_insert, song_table_insert, time_table_insert, user_table_insert, songplay_table_insert]
+select_number_rows_queries= [get_number_staging_events, get_number_staging_songs, get_number_songplays, get_number_users, get_number_songs, get_number_artists, get_number_time]
