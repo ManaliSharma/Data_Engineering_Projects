@@ -96,21 +96,6 @@ This project includes five script files:
 *start_time, hour, day, week, month, year, weekday*
 
 
-## Queries and Results
-
-Number of rows in each table:
-
-| Table            | rows  |
-|---               | --:   |
-| staging_events   | 8056  |
-| staging_songs    | 14896 |
-| artists          | 10025 |
-| songplays        | 333   |
-| songs            | 14896 |
-| time             |  8023 |
-| users            |  105  |
-
-
 ### Steps followed on this project
 
 1. Create Table Schemas
