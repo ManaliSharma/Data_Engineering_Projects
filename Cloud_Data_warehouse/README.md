@@ -46,17 +46,21 @@ DWH_IAM_ROLE_NAME      =
 - Use following commands
   - conda create -n yourenv pip
   - pip install -r requirements.txt
-3. Run the *create_cluster* script to set up the needed infrastructure for this project.
+3. Run the *create_infrastructure* script to set up the needed infrastructure for this project.
 
-    `$ python create_cluster.py`
+    `$ python create_infrastructure.py`
+    
+4. Run the *check_Cluster_Avalabiliity* and *kill_Cluster* script to check availabilty status of cluster and to kill all the resources
 
-4. Run the *create_tables* script to set up the database staging and analytical tables
+    `$ python create_tables.py`
+
+5. Run the *create_tables* script to set up the database staging and analytical tables
 
     `$ python create_tables.py`
 
-5. Finally, run the *etl* script to extract data from the files in S3, stage it in redshift, and finally store it in the dimensional tables.
+6. Finally, run the *etl* script to extract data from the files in S3, stage it in redshift, and finally store it in the dimensional tables.
 
-    `$ python create_tables.py`
+    `$ python etl.py`
 
 
 ## Project structure
@@ -64,15 +68,15 @@ DWH_IAM_ROLE_NAME      =
 This project includes five script files:
 
 - analytics.py runs a few queries on the created star schema to validate that the project has been completed successfully.
-- create_cluster.py is where the AWS components for this project are created programmatically
-- create_table.py is where fact and dimension tables for the star schema in Redshift are created.
+- create_infrastructure.py is where the AWS components for this project are created programmatically
+- create_tables.py is where fact and dimension tables for the star schema in Redshift are created.
 - etl.py is where data gets loaded from S3 into staging tables on Redshift and then processed into the analytics tables on Redshift.
 - sql_queries.py where SQL statements are defined, which are then used by etl.py, create_table.py and analytics.py.
 - README.md is current file.
 - requirements.txt with python dependencies needed to run the project
 
 ## Database schema design
-
+![DER] 
 #### Staging Tables
 - staging_events
 - staging_songs
