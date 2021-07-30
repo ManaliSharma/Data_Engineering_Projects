@@ -76,7 +76,7 @@ This project includes five script files:
 - requirements.txt with python dependencies needed to run the project
 
 ## Database schema design
-![DER]("Cloud_Data_warehouse/data-warehouse-project-der-diagram.png")
+![Alt text]("Cloud_Data_warehouse/data-warehouse-project-der-diagram.png")
 #### Staging Tables
 - staging_events
 - staging_songs
