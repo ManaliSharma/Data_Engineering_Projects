@@ -76,7 +76,7 @@ This project includes five script files:
 - requirements.txt with python dependencies needed to run the project
 
 ## Database schema design
-![Alt text]("(https://github.com/ManaliSharma/Data_Engineering_Projects/Cloud_Data_warehouse/data-warehouse-project-der-diagram.png")
+![Alt text](https://github.com/ManaliSharma/Data_Engineering_Projects/blob/c8f833c6248398cd2787d1949e94a02fc1cc528f/Cloud_Data_warehouse/data-warehouse-project-der-diagram.png)
 #### Staging Tables
 - staging_events
 - staging_songs
