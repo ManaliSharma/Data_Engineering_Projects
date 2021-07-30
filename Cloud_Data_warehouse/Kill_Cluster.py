@@ -1,16 +1,39 @@
-from create_infrastructure import config_parse_file, aws_client, check_cluster_creation,config_persist_cluster_infos, delete_cluster_resources, get_cluster_props,delete_iam_resource
+from create_infrastructure import config_parse_file, aws_client, check_cluster_creation, \
+    config_persist_cluster_infos, destroy_redshift_cluster, get_redshift_cluster_status
+
+# import config_parse_file, aws_client, check_cluster_creation,config_persist_cluster_infos, delete_cluster_resources, get_cluster_props,delete_iam_resource
+
+# def main():
+#     config_parse_file()
+
+#     redshift = aws_client('redshift', "us-east-1")
+#     iam = aws_client('iam', "us-east-1")
+#     if check_cluster_creation(redshift):
+#         print('available')
+#         delete_cluster_resources(redshift)
+#         delete_iam_resource(iam)
+#         print('New redshift cluster status: ')
+#         print(get_cluster_props(redshift))
+#     else:
+#         print('notyet')
+
+
+# if __name__ == '__main__':
+#     main()
+
+
 
 def main():
     config_parse_file()
 
     redshift = aws_client('redshift', "us-east-1")
     iam = aws_client('iam', "us-east-1")
+
     if check_cluster_creation(redshift):
         print('available')
-        delete_cluster_resources(redshift)
-        delete_iam_resource(iam)
+        destroy_redshift_cluster(redshift,iam)
         print('New redshift cluster status: ')
-        print(get_cluster_props(redshift))
+        print(get_redshift_cluster_status(redshift))
     else:
         print('notyet')
 
