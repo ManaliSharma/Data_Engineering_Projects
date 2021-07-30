@@ -1,13 +1,23 @@
-#importing libraries
+import configparser
 import pandas as pd
 import boto3
 import json
-import configparser
-from botocore.exceptions import ClientError
-import psycopg2
+import time
 
+KEY                    = None
+SECRET                 = None
 
+DWH_CLUSTER_TYPE       = None
+DWH_NUM_NODES          = None
+DWH_NODE_TYPE          = None
 
+DWH_CLUSTER_IDENTIFIER = None
+DWH_DB                 = None
+DWH_DB_USER            = None
+DWH_DB_PASSWORD        = None
+DWH_PORT               = None
+
+DWH_IAM_ROLE_NAME      = None
 
 
 def config_parse_file():
@@ -22,25 +32,24 @@ def config_parse_file():
     print("Parsing the config file...")
     config = configparser.ConfigParser()
     with open('dwh.cfg') as configfile:
-        config = configparser.ConfigParser()
-        config.read_file(open('dwh.cfg'))
+        config.read_file(configfile)
 
-        KEY                    = config.get('AWS','KEY')
-        SECRET                 = config.get('AWS','SECRET')
+        KEY = config.get('AWS', 'KEY')
+        SECRET = config.get('AWS', 'SECRET')
 
-        DWH_CLUSTER_TYPE       = config.get("DWH","DWH_CLUSTER_TYPE")
-        DWH_NUM_NODES          = config.get("DWH","DWH_NUM_NODES")
-        DWH_NODE_TYPE          = config.get("DWH","DWH_NODE_TYPE")
+        DWH_CLUSTER_TYPE = config.get("DWH", "DWH_CLUSTER_TYPE")
+        DWH_NUM_NODES = config.get("DWH", "DWH_NUM_NODES")
+        DWH_NODE_TYPE = config.get("DWH", "DWH_NODE_TYPE")
 
-        DWH_CLUSTER_IDENTIFIER = config.get("DWH","DWH_CLUSTER_IDENTIFIER")
+        DWH_IAM_ROLE_NAME = config.get("DWH", "DWH_IAM_ROLE_NAME")
+        DWH_CLUSTER_IDENTIFIER = config.get("DWH", "DWH_CLUSTER_IDENTIFIER")
+        
         DWH_DB                 = config.get("CLUSTER","DWH_DB")
         DWH_DB_USER            = config.get("CLUSTER","DWH_DB_USER")
         DWH_DB_PASSWORD        = config.get("CLUSTER","DWH_DB_PASSWORD")
         DWH_PORT               = config.get("CLUSTER","DWH_PORT")
 
-        DWH_IAM_ROLE_NAME      = config.get("DWH", "DWH_IAM_ROLE_NAME")
 
-#Function for creating iam_role
 def create_iam_role(iam):
     """
     Create the AWS IAM role
@@ -66,7 +75,7 @@ def create_iam_role(iam):
         dwhRole = iam.get_role(RoleName=DWH_IAM_ROLE_NAME)
     return dwhRole
 
-    
+
 def attach_iam_role_policy(iam):
     """
     Attach the AmazonS3ReadOnlyAccess role policy to the created IAM
@@ -86,33 +95,33 @@ def get_iam_role_arn(iam):
     """
     global DWH_IAM_ROLE_NAME
     return iam.get_role(RoleName=DWH_IAM_ROLE_NAME)['Role']['Arn']
-    
-    
-#Function to create cluster
 
-def create_cluster(redshift, roleArn):
+
+def start_cluster_creation(redshift, roleArn):
     """
     Start the Redshift cluster creation
     :param redshift: The redshift resource client
     :param roleArn: The created role ARN
     :return:
     """
-    global DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_NUM_NODES, DWH_DB, DWH_CLUSTER_IDENTIFIER, DWH_DB_USER, DWH_DB_PASSWORD
+    global DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_NUM_NODES, \
+        DWH_DB, DWH_CLUSTER_IDENTIFIER, DWH_DB_USER, DWH_DB_PASSWORD
+    print("2. Starting redshift cluster creation")
     try:
-        response = redshift.create_cluster(        
-            #HW
+        response = redshift.create_cluster(
+            # HW
             ClusterType=DWH_CLUSTER_TYPE,
             NodeType=DWH_NODE_TYPE,
             NumberOfNodes=int(DWH_NUM_NODES),
 
-            #Identifiers & Credentials
+            # Identifiers & Credentials
             DBName=DWH_DB,
             ClusterIdentifier=DWH_CLUSTER_IDENTIFIER,
             MasterUsername=DWH_DB_USER,
             MasterUserPassword=DWH_DB_PASSWORD,
 
-            #Roles (for s3 access)
-            IamRoles=[roleArn]  
+            # Roles (for s3 access)
+            IamRoles=[roleArn]
         )
         print("Redshift cluster creation http response status code: ")
         print(response['ResponseMetadata']['HTTPStatusCode'])
@@ -122,7 +131,6 @@ def create_cluster(redshift, roleArn):
     return False
 
 
-#Adding details to config file
 def config_persist_cluster_infos(redshift):
     """
     Write back to the dwh.cfg configuration file the cluster endpoint and IAM ARN
@@ -146,45 +154,43 @@ def config_persist_cluster_infos(redshift):
         config.write(configfile)
 
     config_parse_file()
-    
 
-        
-#Function to retrive redshift cluster properties
-def prettyRedshiftProps(props):
-    
-    '''
-    Retrieve Redshift clusters properties
-    '''
-    
-    pd.set_option('display.max_colwidth', -1)
-    keysToShow = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", 'VpcId']
-    x = [(k, v) for k,v in props.items() if k in keysToShow]
-    return pd.DataFrame(data=x, columns=["Key", "Value"])
 
-#Function to get cluster properties
-def get_cluster_props(redshift):
+def get_redshift_cluster_status(redshift):
     """
     Retrieves the Redshift cluster status
     :param redshift: The Redshift resource client
     :return: The cluster status
     """
     global DWH_CLUSTER_IDENTIFIER
-    myClusterProps = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
-    cluster_status = myClusterProps['ClusterStatus']
+    cluster_props = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
+    cluster_status = cluster_props['ClusterStatus']
     return cluster_status.lower()
 
-#to check if cluster became available or not
+
 def check_cluster_creation(redshift):
     """
     Check if the cluster status is available, if it is returns True. Otherwise, false.
     :param redshift: The Redshift client resource
     :return:bool
     """
-    if get_cluster_props(redshift) == 'available':
+    if get_redshift_cluster_status(redshift) == 'available':
         return True
     return False
 
-#Function to Open an incoming TCP port to access the cluster ednpoint
+
+def destroy_redshift_cluster(redshift,iam):
+    """
+    Destroy the Redshift cluster (request deletion)
+    :param redshift: The Redshift client resource
+    :return:None
+    """
+    global DWH_CLUSTER_IDENTIFIER, DWH_IAM_ROLE_NAME
+    redshift.delete_cluster(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER, SkipFinalClusterSnapshot=True)
+    iam.detach_role_policy(RoleName=DWH_IAM_ROLE_NAME, PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")
+    iam.delete_role(RoleName=DWH_IAM_ROLE_NAME)
+    
+
 def aws_open_redshift_port(ec2, redshift):
     """
     Opens the Redshift port on the VPC security group.
@@ -196,9 +202,7 @@ def aws_open_redshift_port(ec2, redshift):
     cluster_props = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
     try:
         vpc = ec2.Vpc(id=cluster_props['VpcId'])
-        all_security_groups = list(vpc.security_groups.all())
-        print(all_security_groups)
-        defaultSg = all_security_groups[1]
+        defaultSg = list(vpc.security_groups.all())[0]
         print(defaultSg)
 
         defaultSg.authorize_ingress(
@@ -211,7 +215,7 @@ def aws_open_redshift_port(ec2, redshift):
     except Exception as e:
         print(e)  
 
-##Create clients for IAM, EC2, S3 and Redshift¶
+
 def aws_resource(name, region):
     """
     Creates an AWS client resource
@@ -233,39 +237,19 @@ def aws_client(service, region):
     global KEY, SECRET
     return boto3.client(service, aws_access_key_id=KEY, aws_secret_access_key=SECRET, region_name=region)
 
-#delete resources
-def delete_cluster_resources(redshift):
-    """
-    Destroy the Redshift cluster (request deletion)
-    :param redshift: The Redshift client resource
-    :return:None
-    """
-    global DWH_CLUSTER_IDENTIFIER
-    redshift.delete_cluster( ClusterIdentifier=DWH_CLUSTER_IDENTIFIER,  SkipFinalClusterSnapshot=True)
-
-def delete_iam_resource(iam):
-    global DWH_IAM_ROLE_NAME
-    iam.detach_role_policy(RoleName=DWH_IAM_ROLE_NAME, PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")
-    iam.delete_role(RoleName=DWH_IAM_ROLE_NAME)
-    
-#Main Function to start the process
 def main():
-    
     config_parse_file()
-    # ec2 = aws_resource('ec2', 'us-east-2')
-    # s3 = aws_resource('s3', 'us-west-2')
     iam = aws_client('iam', "us-east-1")
     redshift = aws_client('redshift', "us-east-1")
-    
+
     create_iam_role(iam)
     attach_iam_role_policy(iam)
     roleArn = get_iam_role_arn(iam)
 
-    clusterCreationStarted = create_cluster(redshift, roleArn)
-    
+    clusterCreationStarted = start_cluster_creation(redshift, roleArn)
+
     if clusterCreationStarted:
         print("The cluster is being created.")
-        
-        
+
 if __name__ == '__main__':
     main()
